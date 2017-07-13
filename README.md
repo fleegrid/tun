@@ -12,6 +12,10 @@ This project is for personal usage only, contact me via unit.2b@yorha.army if yo
 
 You MUST encrypt your email with the GPG key mentioned above and also provide your own GPG public key, or I will ignore your email.
 
+## Credits
+
+* [https://github.com/songgao/water](https://github.com/songgao/water)
+
 ## License
 
 MIT License, see `LICENSE` file.
