@@ -1,5 +1,7 @@
 # tun
 
+[![Build Status](https://travis-ci.org/fleegrid/tun.svg?branch=master)](https://travis-ci.org/fleegrid/tun)
+
 TUN virtual network device in pure go
 
 ## Security
