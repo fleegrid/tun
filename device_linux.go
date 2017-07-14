@@ -2,83 +2,70 @@
 
 package tun
 
+/*
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <linux/if_tun.h>
+#include <stdlib.h>
+#include <string.h>
+
+unsigned int if_name_size = IFNAMSIZ;
+
+// create and initialize a STUN device, returns fd and name
+int new_tun(char *nout) {
+	int fd, e;
+
+	// open tun manager device
+	fd = open("/dev/net/tun", O_RDWR);
+	if (fd < 0) return fd;
+
+	// set tun IFF
+	struct ifreq tun_ifreq;
+	tun_ifreq.ifr_ifru.ifru_flags = IFF_TUN | IFF_NO_PI;
+	e = ioctl(fd, TUNSETIFF, &tun_ifreq);
+	if (e < 0) return -1;
+
+	// output device name
+	strcpy(nout, tun_ifreq.ifr_ifrn.ifrn_name);
+
+	// set device persist
+	e = ioctl(fd, TUNSETPERSIST, 0);
+	if (e < 0) return -1;
+
+	return fd;
+}
+
+*/
+import "C"
+
 import (
+	"fmt"
 	"os"
-	"strings"
-	"syscall"
 	"unsafe"
 )
 
-const (
-	cIFFTUN  = 0x0001
-	cIFFTAP  = 0x0002
-	cIFFNOPI = 0x1000
-)
-
-type ifReq struct {
-	Name  [0x10]byte
-	Flags uint16
-	pad   [0x28 - 0x10 - 2]byte
-}
-
-func ioctl(fd uintptr, request int, argp uintptr) error {
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(request), argp)
-	if errno != 0 {
-		return os.NewSyscallError("ioctl", errno)
-	}
-	return nil
-}
-
 // NewDevice create a new TUN device
-func NewDevice(config Config) (dev *Device, err error) {
-	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
-	if err != nil {
-		return nil, err
-	}
-	name, err := createDevice(file.Fd(), config.Name, cIFFTUN|cIFFNOPI)
-	if err != nil {
-		return nil, err
+func NewDevice() (dev *Device, err error) {
+	cNameLen := C.if_name_size
+	cName := (*C.char)(C.malloc(C.size_t(cNameLen)))
+	cFd := C.int(0)
+
+	if cFd, err = C.new_tun(cName); err != nil {
+		return nil, fmt.Errorf("error while creating TUN: %v", err)
 	}
 
-	if err = setDeviceOptions(file.Fd(), config); err != nil {
-		return nil, err
-	}
+	fd := int(cFd)
+	name := C.GoString(cName)
 
-	dev = &Device{ReadWriteCloser: file, name: name}
+	C.free(unsafe.Pointer(cName))
+
+	dev = &Device{
+		name:            name,
+		ReadWriteCloser: os.NewFile(uintptr(fd), name),
+	}
 	return
-}
-
-func createDevice(fd uintptr, ifName string, flags uint16) (createdIFName string, err error) {
-	var req ifReq
-	req.Flags = flags
-	copy(req.Name[:], ifName)
-
-	err = ioctl(fd, syscall.TUNSETIFF, uintptr(unsafe.Pointer(&req)))
-	if err != nil {
-		return
-	}
-
-	createdIFName = strings.Trim(string(req.Name[:]), "\x00")
-	return
-}
-
-func setDeviceOptions(fd uintptr, config Config) (err error) {
-
-	// Device Permissions
-	if config.User != 0 || config.Group != 0 {
-
-		// Set Owner
-		if err = ioctl(fd, syscall.TUNSETOWNER, uintptr(config.User)); err != nil {
-			return
-		}
-
-		// Set Group
-		if err = ioctl(fd, syscall.TUNSETGROUP, uintptr(config.Group)); err != nil {
-			return
-		}
-	}
-
-	// no persistent
-	value := 0
-	return ioctl(fd, syscall.TUNSETPERSIST, uintptr(value))
 }

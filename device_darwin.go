@@ -10,22 +10,28 @@ package tun
 #include <sys/kern_control.h>
 #include <sys/kern_event.h>
 #include <sys/syscall.h>
+#include <net/if.h>
 #include <net/if_utun.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 
+unsigned int if_name_size = IFNAMSIZ;
+
 // create and initialize a STUN device, returns fd and name
-int new_tun(char *name, unsigned int *len) {
+int new_tun(char *nout, unsigned int *lout) {
 	int fd, e;
+
 	// create system control socket
 	fd = socket(PF_SYSTEM, SOCK_DGRAM, SYSPROTO_CONTROL);
 	if (fd < 0) return fd;
+
 	// get ctl_id
 	struct ctl_info utun_ctl_info;
 	strcpy(utun_ctl_info.ctl_name, UTUN_CONTROL_NAME);
 	e = ioctl(fd, CTLIOCGINFO, &utun_ctl_info);
 	if (e < 0) return -1;
+
 	// connect kernel
 	struct sockaddr_ctl utun_addr_ctl = (struct sockaddr_ctl){
 		.sc_len = sizeof(struct sockaddr_ctl),
@@ -36,9 +42,11 @@ int new_tun(char *name, unsigned int *len) {
 	};
 	e = connect(fd, (struct sockaddr *)&utun_addr_ctl, sizeof(struct sockaddr_ctl));
 	if (e < 0) return -1;
+
 	// output device name
-	e = getsockopt(fd, SYSPROTO_CONTROL, UTUN_OPT_IFNAME, name, len);
+	e = getsockopt(fd, SYSPROTO_CONTROL, UTUN_OPT_IFNAME, nout, lout);
 	if (e < 0) return -1;
+
 	return fd;
 }
 
@@ -56,8 +64,8 @@ import (
 )
 
 // NewDevice create a new TUN device
-func NewDevice(config Config) (dev *Device, err error) {
-	cNameLen := C.uint(16)
+func NewDevice() (dev *Device, err error) {
+	cNameLen := C.if_name_size
 	cName := (*C.char)(C.malloc(C.size_t(cNameLen)))
 	cFd := C.int(0)
 
