@@ -43,6 +43,7 @@ int new_tun(char *nout, unsigned int *lout) {
 		.ss_sysaddr = AF_SYS_CONTROL,
 		.sc_id = utun_ctl_info.ctl_id,
 		.sc_unit = 0,
+		.sc_reserved = {0, 0, 0, 0, 0}
 	};
 	e = connect(fd, (struct sockaddr *)&utun_addr_ctl, sizeof(struct sockaddr_ctl));
 	if (e < 0) return -1;
