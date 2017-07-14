@@ -16,6 +16,9 @@ package tun
 unsigned int if_name_size = IFNAMSIZ;
 
 // create and initialize a STUN device, returns fd and name
+//
+// @param nout used for device name output, should be pre-allocated and larger than IFNAMESIZ
+// @return fd if succeeded or -1 if error occurred
 int new_tun(char *nout) {
 	int fd, e;
 
@@ -26,6 +29,7 @@ int new_tun(char *nout) {
 	// set tun IFF
 	struct ifreq tun_ifreq;
 	tun_ifreq.ifr_ifru.ifru_flags = IFF_TUN | IFF_NO_PI;
+	strcpy(tun_ifreq.ifr_ifrn.ifrn_name, "");
 	e = ioctl(fd, TUNSETIFF, &tun_ifreq);
 	if (e < 0) return -1;
 

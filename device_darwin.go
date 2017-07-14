@@ -19,6 +19,10 @@ package tun
 unsigned int if_name_size = IFNAMSIZ;
 
 // create and initialize a STUN device, returns fd and name
+//
+// @param nout used for device name output, should be pre-allocated and larger or equal than IFNAMESIZ
+// @param lout used for nout length input and actual length output
+// @return fd if succeeded or -1 if error occurred
 int new_tun(char *nout, unsigned int *lout) {
 	int fd, e;
 
