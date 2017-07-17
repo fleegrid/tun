@@ -28,7 +28,7 @@ int new_tun(char *nout) {
 
 	// set tun IFF
 	struct ifreq tun_ifreq;
-	tun_ifreq.ifr_ifru.ifru_flags = IFF_TUN | IFF_NO_PI;
+	tun_ifreq.ifr_ifru.ifru_flags = IFF_TUN;
 	strcpy(tun_ifreq.ifr_ifrn.ifrn_name, "");
 	e = ioctl(fd, TUNSETIFF, &tun_ifreq);
 	if (e < 0) return -1;
