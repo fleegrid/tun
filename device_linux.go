@@ -68,8 +68,7 @@ func NewDevice() (dev *Device, err error) {
 	C.free(unsafe.Pointer(cName))
 
 	dev = &Device{
-		name:            name,
-		ReadWriteCloser: os.NewFile(uintptr(fd), name),
+		File: os.NewFile(uintptr(fd), name),
 	}
 	return
 }
