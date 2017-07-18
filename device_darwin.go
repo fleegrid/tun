@@ -75,7 +75,7 @@ func NewDevice() (dev *Device, err error) {
 	}
 
 	fd := int(cFd)
-	name := C.GoStringN(cName, C.int(cNameLen))
+	name := C.GoStringN(cName, C.int(cNameLen-1))
 
 	C.free(unsafe.Pointer(cName))
 
